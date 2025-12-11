@@ -457,7 +457,7 @@ function rotateShape90(shape) {
 
 // Tüm parçaları döndür
 function rotateAllPieces() {
-  if (!gameActive) return;
+    if (!gameActive || rotateBtn.disabled) return;
   
   const picker = document.getElementById('picker');
   const pieces = Array.from(picker.children);
@@ -493,12 +493,12 @@ function rotateAllPieces() {
     }, 300);
   });
   
-  // Butonu tekrar aktif et
+// Butonu tekrar aktif et - DEĞİŞTİRİLDİ
   setTimeout(() => {
-    rotateBtn.disabled = false;
-  }, 350);
-  
-
+    if (gameActive && picker.children.length > 0) {
+      rotateBtn.disabled = false;
+    }
+  }, 400); // 400ms bekle (eski hali 300ms'ti)
 }
 
 // Parçanın görselini güncelle
@@ -625,9 +625,9 @@ function fillPicker(){
   }
   
   // Döndürme butonunu güncelle
-  rotateBtn.disabled = picker.children.length === 0;
+  rotateBtn.disabled = (picker.children.length === 0) || !gameActive;
   
-  setTimeout(checkGameOver, 100);
+
 }
 
 // Oyun bitiş kontrolü
@@ -811,11 +811,11 @@ function endDrag(e){
     if(picker.children.length === 0){
       fillPicker();
     } else {
-      setTimeout(checkGameOver, 100);
+  
     }
     
     // Döndürme butonunu güncelle
-    rotateBtn.disabled = picker.children.length === 0;
+    rotateBtn.disabled = (picker.children.length === 0) || !gameActive;
   }
   
   if(ghost && ghost.parentNode){
@@ -1087,6 +1087,14 @@ startTime = Date.now();
 // Döndürme butonuna event listener ekle
 rotateBtn.addEventListener('click', rotateAllPieces);
 
+  // MOBİL DOKUNMATİK İÇİN EKLEYİN:
+rotateBtn.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+  if(!rotateBtn.disabled && gameActive) {
+    rotateAllPieces();
+  }
+}, { passive: false });
+  
 // Hesaplama örneklerini göster
 setTimeout(logScoreExamples, 500);
 
@@ -1095,6 +1103,7 @@ setTimeout(logScoreExamples, 500);
 </body>
 
 </html>
+
 
 
 
