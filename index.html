@@ -461,7 +461,7 @@ function rotateAllPieces() {
   // Her parçayı döndür
   pieces.forEach(piece => {
     // SADECE 90 DERECE DÖNDÜR - Animasyonu doğrudan 90 derece yapalım
-    piece.style.transition = 'transform 0.3s ease';
+    piece.style.transition = 'transform 0.2s ease';
     piece.style.transform = 'rotate(90deg)';
     
     // Orijinal şekli al
@@ -487,8 +487,7 @@ function rotateAllPieces() {
     rotateBtn.disabled = false;
   }, 350);
   
-  // Oyun durumunu kontrol et
-  setTimeout(checkGameOver, 400);
+
 }
 
 // Parçanın görselini güncelle
@@ -1085,5 +1084,6 @@ setTimeout(logScoreExamples, 1000);
 </body>
 
 </html>
+
 
 
