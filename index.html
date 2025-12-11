@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
 <title>Karıcım | Serhat Kiraz </title>
 <style>
   :root{
@@ -253,7 +253,7 @@
   
   /* Skor Göstergesi */
   .score-display{
-    position:absolute;
+    position:fixed; /* fixed yapalım mobil için */
     top:1rem;
     right:1rem;
     background:rgba(15,17,20,0.8);
@@ -261,6 +261,7 @@
     border-radius:10px;
     font-size:1.1rem;
     border:1px solid rgba(58,209,184,0.3);
+    z-index:100;
   }
   
   .score-value{
@@ -316,9 +317,9 @@
   opacity: 0 !important;
 }
 
-/* PARÇALANMA EFEKTİ - YENİ EKLENDİ */
+/* PARÇALANMA EFEKTİ - MOBİL UYUMLU GÜNCELLENDİ */
 .fragment {
-    position: absolute;
+    position: fixed; /* fixed yerine absolute */
     width: calc(var(--cell-size) / 2);
     height: calc(var(--cell-size) / 2);
     border-radius: 50%;
@@ -326,6 +327,7 @@
     z-index: 1000;
     opacity: 1;
     transform-origin: center;
+    will-change: transform, opacity; /* Performans için */
 }
 
 @keyframes explode {
@@ -351,6 +353,21 @@
 @keyframes fadeOut {
     0% { opacity: 1; }
     100% { opacity: 0; }
+}
+
+/* Mobil için optimizasyon */
+@media (max-width: 768px) {
+  .fragment {
+      width: calc(var(--cell-size) / 2.5);
+      height: calc(var(--cell-size) / 2.5);
+  }
+  
+  .score-display {
+      font-size: 0.9rem;
+      padding: 0.6rem 1rem;
+      top: 0.5rem;
+      right: 0.5rem;
+  }
 }
 </style>
 </head>
@@ -930,61 +947,98 @@ function showScoreAnimation(points, x, y, isBonus = false){
   return; // Hiçbir animasyon gösterme
 }
 
-// PARÇALANMA EFEKTİ FONKSİYONU - YENİ EKLENDİ
+// PARÇALANMA EFEKTİ FONKSİYONU - MOBİL UYUMLU GÜNCELLENDİ
 function createExplosionEffect(row, col, color) {
     const boardEl = document.getElementById('board');
     const cell = boardEl.children[row * SIZE + col];
-    const rect = cell.getBoundingClientRect();
     
-    // Parça sayısı
-    const fragmentCount = 8 + Math.floor(Math.random() * 8);
+    // Hücrenin ekrandaki konumunu al
+    const rect = cell.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Mobil için parça sayısını optimize et
+    const isMobile = viewportWidth <= 768;
+    const fragmentCount = isMobile ? 6 + Math.floor(Math.random() * 6) : 8 + Math.floor(Math.random() * 8);
+    
+    // Hücrenin merkez noktası
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
     
     for(let i = 0; i < fragmentCount; i++) {
         const fragment = document.createElement('div');
         fragment.className = 'fragment';
         
+        // Mobil için daha iyi performans
+        fragment.style.willChange = 'transform, opacity';
+        
         // Rastgele renk tonu (orijinal renge yakın)
-        const hue = Math.floor(Math.random() * 30) - 15 + parseInt(color.match(/hsl\((\d+)/)?.[1] || 180);
-        const saturation = 70 + Math.floor(Math.random() * 20);
-        const lightness = 50 + Math.floor(Math.random() * 20);
+        let hue = 180;
+        let saturation = 70;
+        let lightness = 60;
+        
+        // Renk parse etme
+        if(color.includes('hsl')) {
+            const match = color.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%/);
+            if(match) {
+                hue = parseInt(match[1]);
+                saturation = parseInt(match[2]);
+                lightness = parseInt(match[3]);
+            }
+        }
+        
+        // Renk varyasyonu
+        hue = (hue + Math.floor(Math.random() * 40) - 20 + 360) % 360;
+        saturation = Math.min(100, saturation + Math.floor(Math.random() * 20) - 10);
+        lightness = Math.min(90, Math.max(40, lightness + Math.floor(Math.random() * 20) - 10));
+        
         fragment.style.background = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        
+        // Parça şekli varyasyonu
+        if(Math.random() > 0.7) {
+            fragment.style.borderRadius = '2px'; // Kare parça
+        } else {
+            fragment.style.borderRadius = '50%'; // Yuvarlak parça
+        }
+        
+        // Mobil için daha küçük parçalar
+        const baseSize = isMobile ? 'calc(var(--cell-size) / 3)' : 'calc(var(--cell-size) / 2)';
+        const sizeMultiplier = Math.random() * 0.6 + 0.4;
+        fragment.style.width = `calc(${baseSize} * ${sizeMultiplier})`;
+        fragment.style.height = `calc(${baseSize} * ${sizeMultiplier})`;
         
         // Rastgele hareket yönü ve mesafe
         const angle = (Math.random() * Math.PI * 2);
-        const distance = 50 + Math.random() * 100;
+        const distance = isMobile ? 30 + Math.random() * 60 : 50 + Math.random() * 100;
         const tx = Math.cos(angle) * distance;
         const ty = Math.sin(angle) * distance;
-        const rotation = Math.random() * 360;
+        const rotation = Math.random() * 720 - 360;
         
         // CSS değişkenleriyle animasyon kontrolü
         fragment.style.setProperty('--tx', `${tx}px`);
         fragment.style.setProperty('--ty', `${ty}px`);
         fragment.style.setProperty('--rot', `${rotation}deg`);
         
-        // Pozisyon
-        fragment.style.left = `${rect.left + rect.width/2}px`;
-        fragment.style.top = `${rect.top + rect.height/2}px`;
-        
-        // Boyut varyasyonu
-        const size = (Math.random() * 0.5 + 0.5);
-        fragment.style.width = `calc(var(--cell-size) / 2 * ${size})`;
-        fragment.style.height = `calc(var(--cell-size) / 2 * ${size})`;
+        // Pozisyon - mobil için viewport scroll durumunu hesaba kat
+        fragment.style.left = `${centerX}px`;
+        fragment.style.top = `${centerY}px`;
         
         document.body.appendChild(fragment);
         
-        // Animasyon
-        fragment.style.animation = `explode 0.8s ease-out forwards`;
+        // Animasyon süresi
+        const animDuration = isMobile ? 0.6 + Math.random() * 0.3 : 0.8 + Math.random() * 0.4;
+        fragment.style.animation = `explode ${animDuration}s ease-out forwards`;
         
         // Animasyon bitince elementi kaldır
         setTimeout(() => {
             if(fragment.parentNode) {
                 fragment.parentNode.removeChild(fragment);
             }
-        }, 800);
+        }, animDuration * 1000);
     }
 }
 
-// Satır/sütun silme animasyonu - YENİ EKLENDİ
+// Satır/sütun silme animasyonu - MOBİL UYUMLU
 function animateLineClear(rows, cols) {
     const boardEl = document.getElementById('board');
     
@@ -1030,18 +1084,22 @@ function animateLineClear(rows, cols) {
         }
     }
     
+    // Mobil için daha az gecikme
+    const isMobile = window.innerWidth <= 768;
+    const delay = isMobile ? 10 : 20;
+    
     // Her hücre için animasyonlu parçalanma efekti
     cellsToClear.forEach((cell, index) => {
         setTimeout(() => {
             // Önce mevcut dolguyu kaldır
-            if(cell.element.parentNode) {
+            if(cell.element && cell.element.parentNode) {
                 cell.element.parentNode.removeChild(cell.element);
             }
             
             // Parçalanma efekti oluştur
             createExplosionEffect(cell.row, cell.col, cell.color);
             
-        }, index * 20); // Kademeli efekt
+        }, index * delay); // Kademeli efekt
     });
     
     return cellsToClear.length;
@@ -1144,7 +1202,10 @@ function checkLines(){
     // ÖNCE ANİMASYONU GÖSTER
     const animatedCells = animateLineClear(clearedRows, clearedCols);
     
-    // Animasyonun bitmesini bekle (500ms)
+    // Animasyonun bitmesini bekle (mobil için daha kısa)
+    const isMobile = window.innerWidth <= 768;
+    const animationDelay = isMobile ? 400 : 500;
+    
     setTimeout(() => {
       // Şimdi satırları temizle
       for(const r of clearedRows){
@@ -1175,7 +1236,7 @@ function checkLines(){
         }
       }
       
-      // Skor hesaplama (MEVCUT KOD - DEĞİŞMEDEN KALACAK)
+      // Skor hesaplama
       const rowsCount = clearedRows.length;
       const colsCount = clearedCols.length;
       const scoreResult = calculateScore(rowsCount, colsCount);
@@ -1200,7 +1261,7 @@ function checkLines(){
         }
       }
       
-    }, 500); // Animasyon süresi
+    }, animationDelay);
   }
 }
 
@@ -1260,6 +1321,19 @@ rotateBtn.addEventListener('touchstart', function(e) {
 // Hesaplama örneklerini göster
 setTimeout(logScoreExamples, 500);
 
+// Mobil için viewport scroll durumunu kontrol et
+window.addEventListener('scroll', function() {
+  // Parçalanma efektinin doğru pozisyonda kalması için
+  // scroll pozisyonunu sıfırla
+  window.scrollTo(0, 0);
+}, { passive: false });
+
+// Mobil için orientation change durumunda yenile
+window.addEventListener('orientationchange', function() {
+  setTimeout(function() {
+    window.scrollTo(0, 0);
+  }, 100);
+});
 
 </script>
 </body>
