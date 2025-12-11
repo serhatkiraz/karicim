@@ -31,6 +31,7 @@
     background:linear-gradient(180deg,#041018,#071822);
     border-radius:12px;
     box-shadow:0 8px 30px rgba(0,0,0,.6);
+    touch-action: none;
   }
   
   .cell{
@@ -63,6 +64,7 @@
     flex-direction: column;
     gap: 1rem;
     align-items: center;
+    touch-action: none;
   }
   
   .picker{
@@ -1078,11 +1080,10 @@ rotateBtn.addEventListener('click', rotateAllPieces);
 // Hesaplama örneklerini göster
 setTimeout(logScoreExamples, 1000);
 
-document.addEventListener('touchmove', (e)=>{
-  if(dragging) e.preventDefault();
-}, {passive:false});
+
 </script>
 </body>
 
 </html>
+
 
