@@ -88,6 +88,8 @@
     align-items: center;
     gap: 0.5rem;
     margin-top: 1rem;
+  -webkit-tap-highlight-color: transparent; /* Mobil tıklama efekti */
+  user-select: none; /* Metin seçimini engelle */
   }
   
   .rotate-btn:hover {
@@ -106,7 +108,16 @@
     transform: none;
     box-shadow: none;
   }
-  
+  /* Buton disabled değilse hover efekti */
+.rotate-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(58,209,184,0.3);
+}
+
+/* Buton disabled değilse aktif efekti */
+.rotate-btn:not(:disabled):active {
+  transform: translateY(0);
+}
   .piece{
     display:grid;
     gap:6px;
@@ -931,8 +942,7 @@ function logScoreExamples(){
   console.log('3 satır + 3 sütun: (3+3+2)² = 8² = 64 puan');
   console.log('3 satır + 4 sütun: (3+4+2)² = 9² = 81 puan');
   console.log('4 satır + 3 sütun: (4+3+2)² = 9² = 81 puan');
-  console.log('4 satır + 4 sütun: (4+4+2)² = 10² = 100 puan');
-  console.log('9 satır + 9 sütun: (9+9+2)² = 20² = 400 puan (MAX!)');
+  console.log('4 satır + 4 sütun: (4+4+2)² = 10² = 100 puan (MAX!)');
   console.log('=============================');
   
   console.log('🧩 MEVCUT ŞEKİLLER (10 adet):');
@@ -1066,6 +1076,7 @@ function restartGame(){
   
   createBoard();
   fillPicker();
+
 }
 
 // Oyunu başlat
@@ -1077,13 +1088,14 @@ startTime = Date.now();
 rotateBtn.addEventListener('click', rotateAllPieces);
 
 // Hesaplama örneklerini göster
-setTimeout(logScoreExamples, 1000);
+setTimeout(logScoreExamples, 500);
 
 
 </script>
 </body>
 
 </html>
+
 
 
 
