@@ -12,7 +12,7 @@
     --accent: #3ad1b8;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:#ddd;font-family:system-ui;height:100vh;display:flex;align-items:center;justify-content:center}
+  html,body{background:var(--bg);color:#ddd;font-family:system-ui;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;}
   
   .container{
     display:flex;
@@ -1083,4 +1083,5 @@ document.addEventListener('touchmove', (e)=>{
 }, {passive:false});
 </script>
 </body>
+
 </html>
