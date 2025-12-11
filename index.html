@@ -287,26 +287,34 @@
     100%{ opacity:0; transform:translateY(-60px) scale(1); }
   }
   
-  /* Bonus bilgi gösterimi */
-  .bonus-info{
-    position:fixed;
-    bottom:2rem;
-    left:50%;
-    transform:translateX(-50%);
-    background:rgba(15,17,20,0.9);
-    padding:0.8rem 1.5rem;
-    border-radius:10px;
-    font-size:0.9rem;
-    border:1px solid rgba(46,204,113,0.3);
-    color:#2ecc71;
-    z-index:100;
-    opacity:0;
-    transition:opacity 0.3s;
-  }
-  
-  .bonus-info.show{
-    opacity:1;
-  }
+/* ESKİ HALİ
+.bonus-info{
+  position:fixed;
+  bottom:2rem;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(15,17,20,0.9);
+  padding:0.8rem 1.5rem;
+  border-radius:10px;
+  font-size:0.9rem;
+  border:1px solid rgba(46,204,113,0.3);
+  color:#2ecc71;
+  z-index:100;
+  opacity:0;
+  transition:opacity 0.3s;
+}
+
+.bonus-info.show{
+  opacity:1;
+}
+*/
+
+/* YENİ HALİ - Tamamen Gizle */
+.bonus-info{
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
 </style>
 </head>
 <body>
@@ -354,7 +362,7 @@
   Karıcım: <span class="score-value" id="currentScore">0</span> ❤️
 </div>
 
-<div id="bonusInfo" class="bonus-info"></div>
+
 
 <script>
 // Sabitler
@@ -426,7 +434,7 @@ const finalScoreEl = document.getElementById('finalScore');
 const piecesPlacedEl = document.getElementById('piecesPlaced');
 const linesClearedEl = document.getElementById('linesCleared');
 const gameTimeEl = document.getElementById('gameTime');
-const bonusInfoEl = document.getElementById('bonusInfo');
+
 const rotateBtn = document.getElementById('rotateBtn');
 
 // Tahta oluştur
@@ -863,35 +871,26 @@ function placePiece(shape, row, col, color){
   checkLines();
 }
 
-// Bonus bilgi göster
-function showBonusInfo(message, duration = 3000){
-  bonusInfoEl.textContent = message;
-  bonusInfoEl.classList.add('show');
-  
-  setTimeout(() => {
-    bonusInfoEl.classList.remove('show');
-  }, duration);
+// ESKİ HALİ:
+// function showBonusInfo(message, duration = 3000){
+//   bonusInfoEl.textContent = message;
+//   bonusInfoEl.classList.add('show');
+//   
+//   setTimeout(() => {
+//     bonusInfoEl.classList.remove('show');
+//   }, duration);
+// }
+
+// YENİ HALİ:
+function showBonusInfo(message, duration = 1){
+  // Hiçbir şey yapma - bildirim gösterme
+  return;
 }
 
 // Skor animasyonu göster
+// Bu fonksiyonu boş bırakın
 function showScoreAnimation(points, x, y, isBonus = false){
-  const popup = document.createElement('div');
-  popup.className = 'score-popup';
-  popup.textContent = `+${points}`;
-  popup.style.left = `${x}px`;
-  popup.style.top = `${y}px`;
-  
-  if(isBonus){
-    popup.style.color = '#f1c40f';
-    popup.style.textShadow = '0 0 10px rgba(241, 196, 15, 0.5)';
-    popup.textContent = `★ +${points} ★`;
-  }
-  
-  document.body.appendChild(popup);
-  
-  setTimeout(() => {
-    if(popup.parentNode) popup.parentNode.removeChild(popup);
-  }, 1000);
+  return; // Hiçbir animasyon gösterme
 }
 
 // YENİ SKOR SİSTEMİ: Çapraz bonuslu (satır + sütun + 2)²
@@ -1025,7 +1024,7 @@ function checkLines(){
       
       // Bonus bilgi göster
       if(scoreResult.message){
-        showBonusInfo(scoreResult.message);
+   
       }
       
       // Konsola detaylı bilgi yaz
@@ -1103,6 +1102,7 @@ setTimeout(logScoreExamples, 500);
 </body>
 
 </html>
+
 
 
 
