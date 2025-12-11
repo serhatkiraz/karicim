@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Karıcım| Serhat Kiraz </title>
+<style>
+  :root{
+    --bg:#081018;
+    --cell-bg:#0f1114;
+    --cell-size: min(9vmin,44px);
+    --accent: #3ad1b8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:#ddd;font-family:system-ui;height:100vh;display:flex;align-items:center;justify-content:center}
+  
+  .container{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:2rem;
+    padding:1rem;
+  }
+  
+  .board{
+    display:grid;
+    grid-template-columns:repeat(9,var(--cell-size));
+    grid-template-rows:repeat(9,var(--cell-size));
+    gap:0;
+    padding:6px;
+    background:linear-gradient(180deg,#041018,#071822);
+    border-radius:12px;
+    box-shadow:0 8px 30px rgba(0,0,0,.6);
+  }
+  
+  .cell{
+    background:var(--cell-bg);
+    border:1px solid rgba(255,255,255,0.04);
+    position:relative;
+  }
+  
+  .cell.valid::after,
+  .cell.invalid::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    border-radius:4px;
+    pointer-events:none;
+  }
+  
+  .cell.valid::after{background:rgba(46,204,113,0.18)}
+  .cell.invalid::after{background:rgba(231,76,60,0.18)}
+  
+  .fill{
+    position:absolute;
+    inset:0;
+    border-radius:4px;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.4);
+  }
+  
+  .picker-area {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .picker{
+    display:flex;
+    gap:1rem;
+    height:calc(var(--cell-size) * 2.4);
+    align-items:center;
+  }
+  
+  .rotate-btn {
+    background: linear-gradient(135deg, #3ad1b8, #2ab8a0);
+    color: #081018;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .rotate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(58,209,184,0.3);
+  }
+  
+  .rotate-btn:active {
+    transform: translateY(0);
+  }
+  
+  .rotate-btn:disabled {
+    background: linear-gradient(135deg, #666, #555);
+    color: #888;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .piece{
+    display:grid;
+    gap:6px;
+    padding:6px;
+    border-radius:8px;
+    cursor:grab;
+    position:relative;
+    transition:transform 0.2s, opacity 0.2s;
+  }
+  
+  .piece:hover{
+    transform:translateY(-2px);
+  }
+  
+  .piece:active{cursor:grabbing}
+  
+  .slot{
+    width:var(--cell-size);
+    height:var(--cell-size);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  
+  .block{
+    width:100%;
+    height:100%;
+    border-radius:6px;
+    box-shadow:0 6px 12px rgba(0,0,0,.3);
+  }
+  
+  .ghost{
+    position:fixed;
+    pointer-events:none;
+    z-index:1000;
+    opacity:0.9;
+    transform:translate(-50%,-50%);
+    border-radius:8px;
+    display:grid;
+    gap:6px;
+    padding:6px;
+  }
+  
+  /* Oyun Bitiş Ekranı */
+  .game-over{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(8,16,24,0.95);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity 0.3s, visibility 0.3s;
+  }
+  
+  .game-over.active{
+    opacity:1;
+    visibility:visible;
+  }
+  
+  .game-over-content{
+    background:linear-gradient(135deg,#0a1824,#0f1e2a);
+    padding:3rem;
+    border-radius:20px;
+    text-align:center;
+    max-width:500px;
+    width:90%;
+    border:1px solid rgba(58,209,184,0.2);
+    box-shadow:0 20px 50px rgba(0,0,0,0.5);
+  }
+  
+  .game-over h2{
+    font-size:2.5rem;
+    color:#3ad1b8;
+    margin-bottom:1rem;
+    text-shadow:0 0 10px rgba(58,209,184,0.3);
+  }
+  
+  .game-over p{
+    font-size:1.2rem;
+    margin-bottom:2rem;
+    opacity:0.8;
+  }
+  
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:1rem;
+    margin:2rem 0;
+  }
+  
+  .stat-item{
+    background:rgba(255,255,255,0.05);
+    padding:1rem;
+    border-radius:10px;
+  }
+  
+  .stat-value{
+    font-size:2rem;
+    font-weight:bold;
+    color:#3ad1b8;
+  }
+  
+  .stat-label{
+    font-size:0.9rem;
+    opacity:0.7;
+    margin-top:0.5rem;
+  }
+  
+  .restart-btn{
+    background:linear-gradient(135deg,#3ad1b8,#2ab8a0);
+    color:#081018;
+    border:none;
+    padding:1rem 3rem;
+    font-size:1.2rem;
+    border-radius:50px;
+    cursor:pointer;
+    margin-top:2rem;
+    font-weight:bold;
+    transition:transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .restart-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 20px rgba(58,209,184,0.3);
+  }
+  
+  /* Skor Göstergesi */
+  .score-display{
+    position:absolute;
+    top:1rem;
+    right:1rem;
+    background:rgba(15,17,20,0.8);
+    padding:0.8rem 1.5rem;
+    border-radius:10px;
+    font-size:1.1rem;
+    border:1px solid rgba(58,209,184,0.3);
+  }
+  
+  .score-value{
+    color:#3ad1b8;
+    font-weight:bold;
+    font-size:1.3rem;
+  }
+  
+  /* Skor animasyonu */
+  .score-popup{
+    position:fixed;
+    color:#3ad1b8;
+    font-weight:bold;
+    font-size:1.5rem;
+    pointer-events:none;
+    z-index:1500;
+    animation:scorePopup 1s ease-out forwards;
+    text-shadow:0 0 10px rgba(58,209,184,0.5);
+  }
+  
+  @keyframes scorePopup{
+    0%{ opacity:0; transform:translateY(0) scale(0.5); }
+    50%{ opacity:1; transform:translateY(-30px) scale(1.2); }
+    100%{ opacity:0; transform:translateY(-60px) scale(1); }
+  }
+  
+  /* Bonus bilgi gösterimi */
+  .bonus-info{
+    position:fixed;
+    bottom:2rem;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(15,17,20,0.9);
+    padding:0.8rem 1.5rem;
+    border-radius:10px;
+    font-size:0.9rem;
+    border:1px solid rgba(46,204,113,0.3);
+    color:#2ecc71;
+    z-index:100;
+    opacity:0;
+    transition:opacity 0.3s;
+  }
+  
+  .bonus-info.show{
+    opacity:1;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="board" class="board"></div>
+  <br><br><br>
+  <div class="picker-area">
+    <div id="picker" class="picker"></div>
+<br><br><br>
+    <button id="rotateBtn" class="rotate-btn" disabled>
+      <span style="font-size: 1.2rem;">↻</span>
+    </button>
+  </div>
+</div>
+
+<div id="gameOver" class="game-over">
+  <div class="game-over-content">
+    <h2>🎮 Oyun Bitti!</h2>
+    <p>Tahtada yeterli boş alan kalmadı.</p>
+    
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-value" id="finalScore">0</div>
+        <div class="stat-label">TOPLAM SKOR</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="piecesPlaced">0</div>
+        <div class="stat-label">YERLEŞTİRİLEN PARÇA</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="linesCleared">0</div>
+        <div class="stat-label">TEMİZLENEN SATIR/SÜTUN</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="gameTime">0</div>
+        <div class="stat-label">OYUN SÜRESİ (sn)</div>
+      </div>
+    </div>
+    
+    <button class="restart-btn" onclick="restartGame()">🔄 YENİDEN BAŞLAT</button>
+  </div>
+</div>
+
+<div class="score-display">
+  Karıcım: <span class="score-value" id="currentScore">0</span> ❤️
+</div>
+
+<div id="bonusInfo" class="bonus-info"></div>
+
+<script>
+// Sabitler
+const SIZE = 9;
+
+// YENİ SHAPES SETİ - 10 FARKLI ŞEKİL
+const SHAPES = [
+  // Nokta (1 blok)
+  [[0,0]],
+
+  // Kısa çubuk (2 blok)
+  [[0,0],[1,0]],
+
+  // Uzun çubuk (4 blok)
+  [[0,0],[1,0],[2,0],[3,0]],
+
+  // Küçük T (3 blok)
+  //  X
+  // XXX
+  [[0,1],[1,0],[1,1]],
+
+  // Küçük L (3 blok)
+  // X
+  // XX
+  [[0,0],[0,1],[1,1]],
+
+  // L (4 blok)
+  // X
+  // X
+  // XX
+  [[0,0],[0,1],[0,2],[1,2]],
+
+  // Ters L (4 blok)
+  //  X
+  //  X
+  // XX
+  [[1,0],[1,1],[1,2],[0,2]],
+
+  // Z (4 blok)
+  // XX
+  //  XX
+  [[0,0],[1,0],[1,1],[2,1]],
+
+  // Ters Z (4 blok)
+  //  XX
+  // XX
+  [[1,0],[2,0],[0,1],[1,1]],
+
+  // 4'lü kare (2x2)
+  // XX
+  // XX
+  [[0,0],[1,0],[0,1],[1,1]],
+];
+
+// Oyun durumu
+let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+let dragging = null;
+let activePointerId = null;
+let score = 0;
+let piecesPlaced = 0;
+let linesCleared = 0;
+let startTime = null;
+let gameActive = true;
+
+// DOM elementleri
+const gameOverScreen = document.getElementById('gameOver');
+const currentScoreEl = document.getElementById('currentScore');
+const finalScoreEl = document.getElementById('finalScore');
+const piecesPlacedEl = document.getElementById('piecesPlaced');
+const linesClearedEl = document.getElementById('linesCleared');
+const gameTimeEl = document.getElementById('gameTime');
+const bonusInfoEl = document.getElementById('bonusInfo');
+const rotateBtn = document.getElementById('rotateBtn');
+
+// Tahta oluştur
+function createBoard(){
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  
+  for(let i=0;i<SIZE*SIZE;i++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = i;
+    boardEl.appendChild(cell);
+  }
+}
+
+// Blok döndürme fonksiyonu
+function rotateShape90(shape) {
+  // Shape'i 90 derece saat yönünde döndür
+  // Formül: (x, y) -> (y, -x) sonra normalize et
+  const rotated = shape.map(([x, y]) => [-y, x]);
+  
+  // Negatif koordinatları normalize et (en küçük x ve y'yi 0 yap)
+  const minX = Math.min(...rotated.map(c => c[0]));
+  const minY = Math.min(...rotated.map(c => c[1]));
+  
+  return rotated.map(([x, y]) => [x - minX, y - minY]);
+}
+
+// Tüm parçaları döndür
+function rotateAllPieces() {
+  if (!gameActive) return;
+  
+  const picker = document.getElementById('picker');
+  const pieces = Array.from(picker.children);
+  
+  if (pieces.length === 0) {
+    rotateBtn.disabled = true;
+    return;
+  }
+  
+  rotateBtn.disabled = true; // Animasyon sırasında butonu devre dışı bırak
+  
+  // Her parçayı döndür
+  pieces.forEach(piece => {
+    // SADECE 90 DERECE DÖNDÜR - Animasyonu doğrudan 90 derece yapalım
+    piece.style.transition = 'transform 0.3s ease';
+    piece.style.transform = 'rotate(90deg)';
+    
+    // Orijinal şekli al
+    const originalShape = piece._shape;
+    
+    // Yeni şekli hesapla
+    const rotatedShape = rotateShape90(originalShape);
+    piece._shape = rotatedShape;
+    
+    // Parçayı yeniden oluştur
+    setTimeout(() => {
+      // Animasyonu sıfırla ve görseli güncelle
+      piece.style.transition = 'none';
+      piece.style.transform = 'rotate(0deg)';
+      
+      // Parçayı güncelle
+      updatePieceVisual(piece, rotatedShape);
+    }, 300);
+  });
+  
+  // Butonu tekrar aktif et
+  setTimeout(() => {
+    rotateBtn.disabled = false;
+  }, 350);
+  
+  // Oyun durumunu kontrol et
+  setTimeout(checkGameOver, 400);
+}
+
+// Parçanın görselini güncelle
+function updatePieceVisual(piece, shape) {
+  // Mevcut içeriği temizle
+  piece.innerHTML = '';
+  
+  const color = piece._color;
+  const width = Math.max(...shape.map(c => c[0])) + 1;
+  const height = Math.max(...shape.map(c => c[1])) + 1;
+  
+  piece.style.gridTemplateColumns = `repeat(${width}, auto)`;
+  piece.style.gridTemplateRows = `repeat(${height}, auto)`;
+  
+  for(let y = 0; y < height; y++) {
+    for(let x = 0; x < width; x++) {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      
+      const hasBlock = shape.some(cell => cell[0] === x && cell[1] === y);
+      
+      if(hasBlock) {
+        const block = document.createElement('div');
+        block.className = 'block';
+        block.style.background = color;
+        slot.appendChild(block);
+      }
+      
+      piece.appendChild(slot);
+    }
+  }
+  
+  // Event listener'ları yeniden ekle
+  piece.addEventListener('pointerdown', startDrag, {passive: false});
+}
+
+// Parça oluştur
+function createPiece(shape){
+  const piece = document.createElement('div');
+  piece.className = 'piece';
+  piece.dataset.pieceId = Date.now() + Math.random();
+  
+  const color = `hsl(${Math.random()*360}, 80%, 60%)`;
+  piece._color = color;
+  piece._shape = [...shape];
+  piece._isDragging = false;
+  
+  const width = Math.max(...shape.map(c=>c[0])) + 1;
+  const height = Math.max(...shape.map(c=>c[1])) + 1;
+  
+  piece.style.gridTemplateColumns = `repeat(${width}, auto)`;
+  piece.style.gridTemplateRows = `repeat(${height}, auto)`;
+  
+  for(let y=0; y<height; y++){
+    for(let x=0; x<width; x++){
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      
+      const hasBlock = shape.some(cell => cell[0] === x && cell[1] === y);
+      
+      if(hasBlock){
+        const block = document.createElement('div');
+        block.className = 'block';
+        block.style.background = color;
+        slot.appendChild(block);
+      }
+      
+      piece.appendChild(slot);
+    }
+  }
+  
+  piece.addEventListener('pointerdown', startDrag, {passive: false});
+  
+  // Döndürme butonunu aktif et
+  rotateBtn.disabled = false;
+  
+  return piece;
+}
+
+// Ghost oluştur
+function createGhost(shape, color){
+  const ghost = document.createElement('div');
+  ghost.className = 'ghost';
+  
+  const width = Math.max(...shape.map(c=>c[0])) + 1;
+  const height = Math.max(...shape.map(c=>c[1])) + 1;
+  
+  ghost.style.gridTemplateColumns = `repeat(${width}, var(--cell-size))`;
+  ghost.style.gridTemplateRows = `repeat(${height}, var(--cell-size))`;
+  
+  for(let y=0; y<height; y++){
+    for(let x=0; x<width; x++){
+      const slot = document.createElement('div');
+      slot.style.width = `var(--cell-size)`;
+      slot.style.height = `var(--cell-size)`;
+      
+      const hasBlock = shape.some(cell => cell[0] === x && cell[1] === y);
+      
+      if(hasBlock){
+        const block = document.createElement('div');
+        block.style.width = '100%';
+        block.style.height = '100%';
+        block.style.borderRadius = '6px';
+        block.style.background = color;
+        block.style.boxShadow = '0 6px 12px rgba(0,0,0,.3)';
+        slot.appendChild(block);
+      }
+      
+      ghost.appendChild(slot);
+    }
+  }
+  
+  return ghost;
+}
+
+// Picker'ı doldur
+function fillPicker(){
+  const picker = document.getElementById('picker');
+  picker.innerHTML = '';
+  
+  for(let i=0;i<3;i++){
+    const shape = SHAPES[Math.floor(Math.random()*SHAPES.length)];
+    picker.appendChild(createPiece(shape));
+  }
+  
+  // Döndürme butonunu güncelle
+  rotateBtn.disabled = picker.children.length === 0;
+  
+  setTimeout(checkGameOver, 100);
+}
+
+// Oyun bitiş kontrolü
+function checkGameOver(){
+  if(!gameActive) return;
+  
+  const picker = document.getElementById('picker');
+  const pieces = Array.from(picker.children);
+  
+  for(const piece of pieces){
+    const shape = piece._shape;
+    let canPlaceAnywhere = false;
+    
+    for(let row=0; row<SIZE && !canPlaceAnywhere; row++){
+      for(let col=0; col<SIZE && !canPlaceAnywhere; col++){
+        if(canPlacePiece(shape, row, col)){
+          canPlaceAnywhere = true;
+          break;
+        }
+      }
+    }
+    
+    if(!canPlaceAnywhere){
+      endGame();
+      return;
+    }
+  }
+}
+
+// Parçayı belirli bir konuma yerleştirebilir miyiz kontrol et
+function canPlacePiece(shape, row, col){
+  for(const [dx, dy] of shape){
+    const r = row + dy;
+    const c = col + dx;
+    
+    if(r<0 || r>=SIZE || c<0 || c>=SIZE || board[r][c]){
+      return false;
+    }
+  }
+  return true;
+}
+
+// Sürükleme başlat
+function startDrag(e){
+  if(!gameActive) return;
+  
+  e.preventDefault();
+  e.stopPropagation();
+  
+  if(dragging || activePointerId !== null) return;
+  
+  activePointerId = e.pointerId;
+  const piece = e.currentTarget;
+  piece._isDragging = true;
+  
+  const shape = piece._shape;
+  const color = piece._color;
+  
+  const ghost = createGhost(shape, color);
+  document.body.appendChild(ghost);
+  
+  dragging = {
+    shape, 
+    color, 
+    ghost, 
+    originalPiece: piece,
+    pointerId: e.pointerId
+  };
+  
+  document.addEventListener('pointermove', drag, {passive: false});
+  document.addEventListener('pointerup', endDrag, {passive: false});
+  document.addEventListener('pointercancel', cancelDrag, {passive: false});
+  
+  updateGhost(e);
+}
+
+// Ghost güncelle
+function updateGhost(e){
+  if(!dragging || e.pointerId !== dragging.pointerId) return;
+  
+  const {ghost, shape} = dragging;
+  const boardEl = document.getElementById('board');
+  const rect = boardEl.getBoundingClientRect();
+  
+  ghost.style.left = e.clientX + 'px';
+  ghost.style.top = e.clientY + 'px';
+  
+  const cellSize = rect.width / SIZE;
+  const centerX = e.clientX - rect.left;
+  const centerY = e.clientY - rect.top;
+  
+  const pieceWidth = shape.reduce((max, [dx, dy]) => Math.max(max, dx + 1), 0);
+  const pieceHeight = shape.reduce((max, [dx, dy]) => Math.max(max, dy + 1), 0);
+  
+  const leftX = centerX - (pieceWidth * cellSize) / 2;
+  const topY = centerY - (pieceHeight * cellSize) / 2;
+  
+  let col = Math.floor(leftX / cellSize);
+  let row = Math.floor(topY / cellSize);
+  
+  col = Math.max(0, Math.min(col, SIZE - pieceWidth));
+  row = Math.max(0, Math.min(row, SIZE - pieceHeight));
+  
+  document.querySelectorAll('.cell.valid, .cell.invalid').forEach(cell=>{
+    cell.classList.remove('valid', 'invalid');
+  });
+  
+  let canPlace = true;
+  
+  for(const [dx, dy] of shape){
+    const r = row + dy;
+    const c = col + dx;
+    
+    if(r<0 || r>=SIZE || c<0 || c>=SIZE || board[r][c]){
+      canPlace = false;
+      break;
+    }
+  }
+  
+  for(const [dx, dy] of shape){
+    const r = row + dy;
+    const c = col + dx;
+    
+    if(r>=0 && r<SIZE && c>=0 && c<SIZE){
+      const index = r * SIZE + c;
+      const cell = boardEl.children[index];
+      cell.classList.add(canPlace ? 'valid' : 'invalid');
+    }
+  }
+  
+  dragging.target = {row, col, canPlace};
+}
+
+// Sürükle
+function drag(e){
+  if(!dragging || e.pointerId !== dragging.pointerId) return;
+  e.preventDefault();
+  updateGhost(e);
+}
+
+// Sürükleme iptal
+function cancelDrag(e){
+  if(!dragging || e.pointerId !== dragging.pointerId) return;
+  
+  if(dragging.ghost && dragging.ghost.parentNode){
+    dragging.ghost.parentNode.removeChild(dragging.ghost);
+  }
+  
+  document.querySelectorAll('.cell.valid, .cell.invalid').forEach(cell=>{
+    cell.classList.remove('valid', 'invalid');
+  });
+  
+  if(dragging.originalPiece){
+    dragging.originalPiece._isDragging = false;
+  }
+  
+  document.removeEventListener('pointermove', drag);
+  document.removeEventListener('pointerup', endDrag);
+  document.removeEventListener('pointercancel', cancelDrag);
+  
+  dragging = null;
+  activePointerId = null;
+}
+
+// Sürükleme bitir
+function endDrag(e){
+  if(!dragging || e.pointerId !== dragging.pointerId) return;
+  e.preventDefault();
+  
+  const {shape, color, originalPiece, target} = dragging;
+  const {ghost} = dragging;
+  
+  if(target && target.canPlace){
+    placePiece(shape, target.row, target.col, color);
+    
+    if(originalPiece && originalPiece.parentNode === document.getElementById('picker')){
+      originalPiece.remove();
+    }
+    
+    const picker = document.getElementById('picker');
+    if(picker.children.length === 0){
+      fillPicker();
+    } else {
+      setTimeout(checkGameOver, 100);
+    }
+    
+    // Döndürme butonunu güncelle
+    rotateBtn.disabled = picker.children.length === 0;
+  }
+  
+  if(ghost && ghost.parentNode){
+    ghost.parentNode.removeChild(ghost);
+  }
+  
+  document.querySelectorAll('.cell.valid, .cell.invalid').forEach(cell=>{
+    cell.classList.remove('valid', 'invalid');
+  });
+  
+  if(originalPiece){
+    originalPiece._isDragging = false;
+  }
+  
+  document.removeEventListener('pointermove', drag);
+  document.removeEventListener('pointerup', endDrag);
+  document.removeEventListener('pointercancel', cancelDrag);
+  
+  dragging = null;
+  activePointerId = null;
+}
+
+// Parça yerleştir
+function placePiece(shape, row, col, color){
+  const boardEl = document.getElementById('board');
+  
+  for(const [dx, dy] of shape){
+    const r = row + dy;
+    const c = col + dx;
+    
+    if(r>=0 && r<SIZE && c>=0 && c<SIZE){
+      board[r][c] = 1;
+      
+      const index = r * SIZE + c;
+      const cell = boardEl.children[index];
+      
+      const fill = document.createElement('div');
+      fill.className = 'fill';
+      fill.style.background = color;
+      cell.appendChild(fill);
+    }
+  }
+  
+  piecesPlaced++;
+  checkLines();
+}
+
+// Bonus bilgi göster
+function showBonusInfo(message, duration = 3000){
+  bonusInfoEl.textContent = message;
+  bonusInfoEl.classList.add('show');
+  
+  setTimeout(() => {
+    bonusInfoEl.classList.remove('show');
+  }, duration);
+}
+
+// Skor animasyonu göster
+function showScoreAnimation(points, x, y, isBonus = false){
+  const popup = document.createElement('div');
+  popup.className = 'score-popup';
+  popup.textContent = `+${points}`;
+  popup.style.left = `${x}px`;
+  popup.style.top = `${y}px`;
+  
+  if(isBonus){
+    popup.style.color = '#f1c40f';
+    popup.style.textShadow = '0 0 10px rgba(241, 196, 15, 0.5)';
+    popup.textContent = `★ +${points} ★`;
+  }
+  
+  document.body.appendChild(popup);
+  
+  setTimeout(() => {
+    if(popup.parentNode) popup.parentNode.removeChild(popup);
+  }, 1000);
+}
+
+// YENİ SKOR SİSTEMİ: Çapraz bonuslu (satır + sütun + 2)²
+function calculateScore(clearedRows, clearedCols){
+  let newScore = 0;
+  let bonusMessage = '';
+  let isBonus = false;
+  
+  // Hem satır HEM sütun silinmişse (çapraz kesişme)
+  if(clearedRows > 0 && clearedCols > 0){
+    // YENİ FORMÜL: (satır + sütun + 2)²
+    const totalLines = clearedRows + clearedCols + 2;
+    newScore = totalLines * totalLines;
+    isBonus = true;
+    
+    // Bonus mesajları
+    const bonusMessages = [
+      `🎯 ÇAPRAZ TEMİZLEME! ${clearedRows} satır + ${clearedCols} sütun`,
+      `⚡ BONUS: (${clearedRows}+${clearedCols}+2)² = ${totalLines}² = ${newScore} puan!`,
+      `🔥 MÜTHİŞ! ${clearedRows}×${clearedCols} kesişme noktası temizlendi!`
+    ];
+    bonusMessage = bonusMessages[Math.floor(Math.random() * bonusMessages.length)];
+    
+  } else if(clearedRows > 0) {
+    // Sadece satır silinmişse: satır²
+    newScore = clearedRows * clearedRows;
+    bonusMessage = `${clearedRows} satır temizlendi: ${clearedRows}² = ${newScore} puan`;
+    
+  } else if(clearedCols > 0) {
+    // Sadece sütun silinmişse: sütun²
+    newScore = clearedCols * clearedCols;
+    bonusMessage = `${clearedCols} sütun temizlendi: ${clearedCols}² = ${newScore} puan`;
+  }
+  
+  return { score: newScore, message: bonusMessage, isBonus };
+}
+
+// Hesaplama örneklerini konsola yaz
+function logScoreExamples(){
+  console.log('📊 SKOR HESAPLAMA ÖRNEKLERİ:');
+  console.log('=============================');
+  console.log('1 satır + 1 sütun: (1+1+2)² = 4² = 16 puan');
+  console.log('1 satır + 2 sütun: (1+2+2)² = 5² = 25 puan');
+  console.log('2 satır + 1 sütun: (2+1+2)² = 5² = 25 puan');
+  console.log('2 satır + 2 sütun: (2+2+2)² = 6² = 36 puan');
+  console.log('2 satır + 3 sütun: (2+3+2)² = 7² = 49 puan');
+  console.log('3 satır + 2 sütun: (3+2+2)² = 7² = 49 puan');
+  console.log('3 satır + 3 sütun: (3+3+2)² = 8² = 64 puan');
+  console.log('3 satır + 4 sütun: (3+4+2)² = 9² = 81 puan');
+  console.log('4 satır + 3 sütun: (4+3+2)² = 9² = 81 puan');
+  console.log('4 satır + 4 sütun: (4+4+2)² = 10² = 100 puan');
+  console.log('9 satır + 9 sütun: (9+9+2)² = 20² = 400 puan (MAX!)');
+  console.log('=============================');
+  
+  console.log('🧩 MEVCUT ŞEKİLLER (10 adet):');
+  console.log('1. Nokta (1 blok)');
+  console.log('2. Kısa çubuk (2 blok)');
+  console.log('3. Uzun çubuk (4 blok)');
+  console.log('4. Küçük T (3 blok)');
+  console.log('5. Küçük L (3 blok)');
+  console.log('6. L (4 blok)');
+  console.log('7. Ters L (4 blok)');
+  console.log('8. Z (4 blok)');
+  console.log('9. Ters Z (4 blok)');
+  console.log('10. 4\'lü kare (4 blok)');
+}
+
+// Tam satır/sütun kontrolü
+function checkLines(){
+  const boardEl = document.getElementById('board');
+  let clearedRows = [];
+  let clearedCols = [];
+  
+  // Satır kontrolü
+  for(let r=0;r<SIZE;r++){
+    if(board[r].every(cell=>cell===1)){
+      clearedRows.push(r);
+    }
+  }
+  
+  // Sütun kontrolü
+  for(let c=0;c<SIZE;c++){
+    let full = true;
+    for(let r=0;r<SIZE;r++){
+      if(board[r][c]===0){
+        full = false;
+        break;
+      }
+    }
+    
+    if(full){
+      clearedCols.push(c);
+    }
+  }
+  
+  // Temizlenen satır/sütun varsa işle
+  if(clearedRows.length > 0 || clearedCols.length > 0){
+    // Satırları temizle
+    for(const r of clearedRows){
+      for(let c=0;c<SIZE;c++){
+        board[r][c] = 0;
+        const index = r * SIZE + c;
+        boardEl.children[index].innerHTML = '';
+      }
+    }
+    
+    // Sütunları temizle
+    for(const c of clearedCols){
+      for(let r=0;r<SIZE;r++){
+        board[r][c] = 0;
+        const index = r * SIZE + c;
+        boardEl.children[index].innerHTML = '';
+      }
+    }
+    
+    // YENİ SKOR HESAPLAMA
+    const rowsCount = clearedRows.length;
+    const colsCount = clearedCols.length;
+    const scoreResult = calculateScore(rowsCount, colsCount);
+    
+    if(scoreResult.score > 0){
+      // Skoru güncelle
+      score += scoreResult.score;
+      currentScoreEl.textContent = score;
+      linesCleared += rowsCount + colsCount;
+      
+      // Animasyon göster
+      const boardRect = boardEl.getBoundingClientRect();
+      const centerX = boardRect.left + boardRect.width / 2;
+      const centerY = boardRect.top + boardRect.height / 2;
+      showScoreAnimation(scoreResult.score, centerX, centerY, scoreResult.isBonus);
+      
+      // Bonus bilgi göster
+      if(scoreResult.message){
+        showBonusInfo(scoreResult.message);
+      }
+      
+      // Konsola detaylı bilgi yaz
+      console.log(`🎯 ${rowsCount} satır + ${colsCount} sütun temizlendi`);
+      if(rowsCount > 0 && colsCount > 0){
+        console.log(`📊 BONUS FORMÜL: (${rowsCount}+${colsCount}+2)² = ${rowsCount+colsCount+2}² = ${scoreResult.score} puan`);
+      } else if(rowsCount > 0){
+        console.log(`📊 FORMÜL: ${rowsCount}² = ${scoreResult.score} puan`);
+      } else {
+        console.log(`📊 FORMÜL: ${colsCount}² = ${scoreResult.score} puan`);
+      }
+    }
+  }
+}
+
+// Oyunu bitir
+function endGame(){
+  if(!gameActive) return;
+  
+  gameActive = false;
+  const gameTime = Math.floor((Date.now() - startTime) / 1000);
+  
+  finalScoreEl.textContent = score;
+  piecesPlacedEl.textContent = piecesPlaced;
+  linesClearedEl.textContent = linesCleared;
+  gameTimeEl.textContent = gameTime;
+  
+  // Döndürme butonunu devre dışı bırak
+  rotateBtn.disabled = true;
+  
+  setTimeout(() => {
+    gameOverScreen.classList.add('active');
+  }, 500);
+}
+
+// Oyunu yeniden başlat
+function restartGame(){
+  board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+  score = 0;
+  piecesPlaced = 0;
+  linesCleared = 0;
+  gameActive = true;
+  startTime = Date.now();
+  
+  currentScoreEl.textContent = '0';
+  gameOverScreen.classList.remove('active');
+  bonusInfoEl.classList.remove('show');
+  
+  createBoard();
+  fillPicker();
+}
+
+// Oyunu başlat
+createBoard();
+fillPicker();
+startTime = Date.now();
+
+// Döndürme butonuna event listener ekle
+rotateBtn.addEventListener('click', rotateAllPieces);
+
+// Hesaplama örneklerini göster
+setTimeout(logScoreExamples, 1000);
+
+document.addEventListener('touchmove', (e)=>{
+  if(dragging) e.preventDefault();
+}, {passive:false});
+</script>
+</body>
+</html>
